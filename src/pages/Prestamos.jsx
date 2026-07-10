@@ -98,12 +98,18 @@ function Prestamos() {
             required
           />
 
-          <input
-            name="documentoGarantia"
-            value={form.documentoGarantia}
-            onChange={manejarCambio}
-            placeholder="Documento en garantía"
-          />
+          <select
+           name="documentoGarantia"
+          value={form.documentoGarantia}
+          onChange={manejarCambio}
+          required
+          >
+          <option value="">Seleccione un documento en garantía</option>
+          <option value="CEDULA">Cédula de identidad</option>
+          <option value="PASAPORTE">Pasaporte</option>
+          <option value="LICENCIA">Licencia de conducir</option>
+         <option value="CARNET_ESTUDIANTIL">Carnet estudiantil</option>
+          </select>
 
           <div className="books-select">
             {libros
