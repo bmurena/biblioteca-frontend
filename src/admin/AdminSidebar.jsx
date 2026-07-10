@@ -13,7 +13,9 @@ function AdminSidebar({ usuario, cerrarSesion }) {
         <div className="admin-user">
           <strong>{usuario.nombre}</strong>
           <span>
-            {esAdministrador ? "Administrador" : "Bibliotecario"}
+            {esAdministrador
+              ? "Administrador"
+              : "Bibliotecario"}
           </span>
         </div>
 
@@ -34,6 +36,10 @@ function AdminSidebar({ usuario, cerrarSesion }) {
 
           <NavLink to="/prestamos">
             Préstamos y devoluciones
+          </NavLink>
+
+          <NavLink to="/multas">
+            Multas
           </NavLink>
         </nav>
       </div>

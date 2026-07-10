@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 
 import Login from "./pages/Login";
-
+import Multas from "./admin/Multas";
 import AdminLayout from "./admin/AdminLayout";
 import Dashboard from "./admin/Dashboard";
 import Usuarios from "./admin/Usuarios";
@@ -67,6 +67,11 @@ function App() {
               path="prestamos"
               element={<Prestamos />}
             />
+
+            <Route
+            path="multas"
+           element={<Multas />}
+          />
 
           </Route>
 

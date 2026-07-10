@@ -4,6 +4,8 @@ import api from "../services/api";
 function Usuarios() {
   const [usuarios, setUsuarios] = useState([]);
   const [editandoId, setEditandoId] = useState(null);
+  const [mensaje, setMensaje] = useState("");
+  const [error, setError] = useState("");
 
   const [form, setForm] = useState({
     nombre: "",
@@ -17,49 +19,19 @@ function Usuarios() {
   }, []);
 
   const cargarUsuarios = async () => {
-    const respuesta = await api.get("/usuarios");
-    setUsuarios(respuesta.data);
+    try {
+      const respuesta = await api.get("/usuarios");
+      setUsuarios(respuesta.data);
+    } catch {
+      setError("No se pudieron cargar los usuarios.");
+    }
   };
 
   const manejarCambio = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
-  };
-
-  const guardarUsuario = async (e) => {
-    e.preventDefault();
-
-    if (editandoId) {
-      const datos = { ...form };
-
-      if (!datos.password) {
-        delete datos.password;
-      }
-
-      await api.patch(`/usuarios/${editandoId}`, datos);
-    } else {
-      await api.post("/usuarios", form);
-    }
-
-    limpiarFormulario();
-    cargarUsuarios();
-  };
-
-  const editarUsuario = (usuario) => {
-    setEditandoId(usuario.id);
     setForm({
-      nombre: usuario.nombre,
-      email: usuario.email,
-      password: "",
-      rol: usuario.rol,
+      ...form,
+      [e.target.name]: e.target.value,
     });
-  };
-
-  const eliminarUsuario = async (id) => {
-    const confirmar = confirm("¿Desea eliminar este usuario?");
-    if (!confirmar) return;
-
-    await api.delete(`/usuarios/${id}`);
-    cargarUsuarios();
   };
 
   const limpiarFormulario = () => {
@@ -72,102 +44,252 @@ function Usuarios() {
     });
   };
 
+  const guardarUsuario = async (e) => {
+    e.preventDefault();
+
+    setMensaje("");
+    setError("");
+
+    try {
+      if (editandoId) {
+        const datos = {
+          nombre: form.nombre,
+          email: form.email,
+          rol: form.rol,
+        };
+
+        if (form.password.trim()) {
+          datos.password = form.password;
+        }
+
+        await api.patch(`/usuarios/${editandoId}`, datos);
+        setMensaje("Usuario actualizado correctamente.");
+      } else {
+        await api.post("/usuarios", form);
+        setMensaje("Usuario creado correctamente.");
+      }
+
+      limpiarFormulario();
+      await cargarUsuarios();
+    } catch (err) {
+      setError(
+        err.response?.data?.message ||
+          "No se pudo guardar el usuario."
+      );
+    }
+  };
+
+  const editarUsuario = (usuario) => {
+    setEditandoId(usuario.id);
+
+    setForm({
+      nombre: usuario.nombre,
+      email: usuario.email,
+      password: "",
+      rol: usuario.rol,
+    });
+
+    setMensaje("");
+    setError("");
+
+    window.scrollTo({
+      top: 0,
+      behavior: "smooth",
+    });
+  };
+
+  const eliminarUsuario = async (usuario) => {
+    const confirmar = window.confirm(
+      `¿Está seguro de eliminar al usuario "${usuario.nombre}"?`
+    );
+
+    if (!confirmar) return;
+
+    try {
+      await api.delete(`/usuarios/${usuario.id}`);
+
+      setMensaje("Usuario eliminado correctamente.");
+      setError("");
+
+      if (editandoId === usuario.id) {
+        limpiarFormulario();
+      }
+
+      await cargarUsuarios();
+    } catch (err) {
+      setError(
+        err.response?.data?.message ||
+          "No se pudo eliminar el usuario."
+      );
+    }
+  };
+
+  const mostrarRol = (rol) => {
+    const nombres = {
+      CLIENTE: "Cliente",
+      ESTUDIANTE: "Estudiante",
+      PROFESOR: "Profesor",
+      BIBLIOTECARIO: "Bibliotecario",
+      ADMIN: "Administrador",
+    };
+
+    return nombres[rol] || rol;
+  };
+
   return (
     <section>
       <div className="page-header">
         <div>
           <h2>Usuarios</h2>
-          <p>Administración de usuarios registrados.</p>
+          <p>Administración de cuentas y roles del sistema.</p>
         </div>
       </div>
 
-      <div className="form-card">
-        <h5>{editandoId ? "Editar usuario" : "Nuevo usuario"}</h5>
+      {mensaje && (
+        <div className="mensaje-exito">{mensaje}</div>
+      )}
 
-        <form onSubmit={guardarUsuario} className="form-grid">
+      {error && (
+        <div className="mensaje-error">{error}</div>
+      )}
+
+      <div className="form-card">
+        <h5>
+          {editandoId ? "Editar usuario" : "Nuevo usuario"}
+        </h5>
+
+        <form
+          onSubmit={guardarUsuario}
+          className="form-grid"
+        >
           <input
+            type="text"
             name="nombre"
+            placeholder="Nombre"
             value={form.nombre}
             onChange={manejarCambio}
-            placeholder="Nombre"
             required
           />
 
           <input
+            type="email"
             name="email"
+            placeholder="Correo"
             value={form.email}
             onChange={manejarCambio}
-            placeholder="Correo"
-            type="email"
             required
           />
 
           <input
+            type="password"
             name="password"
+            placeholder={
+              editandoId
+                ? "Nueva contraseña (opcional)"
+                : "Contraseña"
+            }
             value={form.password}
             onChange={manejarCambio}
-            placeholder={editandoId ? "Nueva contraseña (opcional)" : "Contraseña"}
             required={!editandoId}
           />
 
-          <select name="rol" value={form.rol} onChange={manejarCambio}>
+          <select
+            name="rol"
+            value={form.rol}
+            onChange={manejarCambio}
+          >
             <option value="CLIENTE">Cliente</option>
             <option value="ESTUDIANTE">Estudiante</option>
             <option value="PROFESOR">Profesor</option>
-            <option value="BIBLIOTECARIO">Bibliotecario</option>
+            <option value="BIBLIOTECARIO">
+              Bibliotecario
+            </option>
             <option value="ADMIN">Administrador</option>
           </select>
 
           <div className="form-actions">
-          <button type="submit" className="btn btn-dark">
-          {editandoId ? "Guardar cambios" : "Guardar usuario"}
-        </button>
+            <button
+              type="submit"
+              className="btn btn-dark"
+            >
+              {editandoId
+                ? "Guardar cambios"
+                : "Crear usuario"}
+            </button>
 
-         {editandoId && (
-         <button type="button" className="btn btn-outline-secondary" onClick={limpiarFormulario}>
-         Cancelar
-        </button>
-          )}
-        </div>
+            {editandoId && (
+              <button
+                type="button"
+                className="btn btn-outline-secondary"
+                onClick={limpiarFormulario}
+              >
+                Cancelar
+              </button>
+            )}
+          </div>
         </form>
       </div>
 
       <div className="card mt-4">
-        <table className="table table-hover mb-0">
-          <thead>
-            <tr>
-              <th>Nombre</th>
-              <th>Correo</th>
-              <th>Rol</th>
-              <th className="text-end">Acciones</th>
-            </tr>
-          </thead>
-
-          <tbody>
-            {usuarios.map((usuario) => (
-              <tr key={usuario.id}>
-                <td>{usuario.nombre}</td>
-                <td>{usuario.email}</td>
-                <td>{usuario.rol}</td>
-                <td className="text-end">
-                  <button
-                    className="btn btn-sm btn-outline-secondary me-2"
-                    onClick={() => editarUsuario(usuario)}
-                  >
-                    Editar
-                  </button>
-
-                  <button
-                    className="btn btn-sm btn-outline-danger"
-                    onClick={() => eliminarUsuario(usuario.id)}
-                  >
-                    Eliminar
-                  </button>
-                </td>
+        <div className="table-responsive">
+          <table className="table table-hover mb-0">
+            <thead>
+              <tr>
+                <th>Nombre</th>
+                <th>Correo</th>
+                <th>Rol</th>
+                <th className="text-end">Acciones</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+
+            <tbody>
+              {usuarios.length === 0 ? (
+                <tr>
+                  <td
+                    colSpan="4"
+                    className="text-center py-4"
+                  >
+                    No hay usuarios registrados.
+                  </td>
+                </tr>
+              ) : (
+                usuarios.map((usuario) => (
+                  <tr key={usuario.id}>
+                    <td>{usuario.nombre}</td>
+                    <td>{usuario.email}</td>
+                    <td>
+                      <span className="rol-badge">
+                        {mostrarRol(usuario.rol)}
+                      </span>
+                    </td>
+
+                    <td className="text-end">
+                      <button
+                        type="button"
+                        className="btn btn-sm btn-outline-secondary me-2"
+                        onClick={() =>
+                          editarUsuario(usuario)
+                        }
+                      >
+                        Editar
+                      </button>
+
+                      <button
+                        type="button"
+                        className="btn btn-sm btn-outline-danger"
+                        onClick={() =>
+                          eliminarUsuario(usuario)
+                        }
+                      >
+                        Eliminar
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
     </section>
   );
